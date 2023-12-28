@@ -16,8 +16,6 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function (Request $request) {
-    User::find(1)->delete();
-
     $users = User::search($request->q)->get();
 
     dd($users);

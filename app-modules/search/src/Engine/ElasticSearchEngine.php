@@ -21,11 +21,10 @@ class ElasticSearchEngine extends Engine
     public function update($models)
     {
         $models->each(function ($model) {
-            $params = [
-                'index' => $model->searchableAs(),
+            $params = $this->getRequestBody($model, [
                 'id' => $model->getKey(),
                 'body' => $model->toSearchableArray(),
-            ];
+            ]);
 
             $this->client->index($params);
         });
@@ -39,11 +38,10 @@ class ElasticSearchEngine extends Engine
      */
     public function delete($models)
     {
-        $models->each(function($model) {
-            $params = [
-                'index' => $model->searchableAs(),
+        $models->each(function ($model) {
+            $params = $this->getRequestBody($model, [
                 'id' => $model->getKey(),
-            ];
+            ]);
 
             $this->client->delete($params);
         });
@@ -68,8 +66,7 @@ class ElasticSearchEngine extends Engine
      */
     protected function performSearch(Builder $builder, array $options = [])
     {
-        $params = [
-            'index' => $builder->model->searchableAs(),
+        $params = array_merge_recursive($this->getRequestBody($builder->model), [
             'body' => [
                 'from' => 0,
                 'size' => 5000,
@@ -81,7 +78,7 @@ class ElasticSearchEngine extends Engine
                     ]
                 ],
             ],
-        ];
+        ]);
 
         $options = array_merge_recursive($params, $options);
 
@@ -103,7 +100,10 @@ class ElasticSearchEngine extends Engine
      * @param mixed $results
      * @return \Illuminate\Support\Collection
      */
-    public function mapIds($results) {}
+    public function mapIds($results)
+    {
+        // return collect($results['hits'])->pluck('objectID')->values();
+    }
 
     /**
      * Map the given results to instances of the given model.
@@ -169,4 +169,16 @@ class ElasticSearchEngine extends Engine
      * @param string $name
      */
     public function deleteIndex($name) {}
+
+    /**
+     * @param mixed $model The model to retrieve the searchable index for.
+     * @param array $options Additional options to include in the request body.
+     * @return array The generated request body.
+     */
+    protected function getRequestBody($model, array $options = []): array
+    {
+        return array_merge_recursive([
+            'index' => $model->searchableAs(),
+        ], $options);
+    }
 }
