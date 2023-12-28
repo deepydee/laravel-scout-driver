@@ -37,7 +37,17 @@ class ElasticSearchEngine extends Engine
      * @param \Illuminate\Database\Eloquent\Collection $models
      * @return void
      */
-    public function delete($models) {}
+    public function delete($models)
+    {
+        $models->each(function($model) {
+            $params = [
+                'index' => $model->searchableAs(),
+                'id' => $model->getKey(),
+            ];
+
+            $this->client->delete($params);
+        });
+    }
 
     /**
      * Perform the given search on the engine.
