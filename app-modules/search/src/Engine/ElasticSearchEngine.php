@@ -10,9 +10,7 @@ use Laravel\Scout\Engines\Engine;
 
 class ElasticSearchEngine extends Engine
 {
-    public function __construct(protected Client $client)
-    {
-    }
+    public function __construct(protected Client $client) {}
 
     /**
      * Update the given model in the index.
@@ -22,7 +20,7 @@ class ElasticSearchEngine extends Engine
      */
     public function update($models)
     {
-        $models->each(function($model) {
+        $models->each(function ($model) {
             $params = [
                 'index' => $model->searchableAs(),
                 'id' => $model->getKey(),
@@ -48,9 +46,23 @@ class ElasticSearchEngine extends Engine
      */
     public function search(Builder $builder)
     {
+        return $this->performSearch($builder);
+    }
+
+    /**
+     * Perform the given search on the engine.
+     *
+     * @param  \Laravel\Scout\Builder  $builder
+     * @param  array  $options
+     * @return mixed
+     */
+    protected function performSearch(Builder $builder, array $options = [])
+    {
         $params = [
             'index' => $builder->model->searchableAs(),
             'body' => [
+                'from' => 0,
+                'size' => 5000,
                 'query' => [
                     'multi_match' => [
                         'query' => $builder->query,
@@ -61,7 +73,9 @@ class ElasticSearchEngine extends Engine
             ],
         ];
 
-        return $this->client->search($params);
+        $options = array_merge_recursive($params, $options);
+
+        return $this->client->search($options);
     }
 
     /**
