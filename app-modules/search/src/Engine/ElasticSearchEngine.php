@@ -73,7 +73,7 @@ class ElasticSearchEngine extends Engine
                 'size' => 5000,
                 'query' => [
                     'multi_match' => [
-                        'query' => $builder->query,
+                        'query' => $builder->query ?? '',
                         'fields' => $builder->model::SEARCHABLE_FIELDS,
                         'type' => 'phrase_prefix',
                     ]
