@@ -5,18 +5,23 @@ declare(strict_types=1);
 namespace Modules\Search\Engine;
 
 use Elastic\Elasticsearch\Client;
-use Laravel\Scout\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Artisan;
+use Laravel\Scout\Builder;
 use Laravel\Scout\Engines\Engine;
 
 class ElasticSearchEngine extends Engine
 {
-    public function __construct(protected Client $client) {}
+    public function __construct(protected Client $client)
+    {
+    }
 
     /**
      * Update the given model in the index.
      *
-     * @param \Illuminate\Database\Eloquent\Collection $models
+     * @param Collection $models
      * @return void
      */
     public function update($models)
@@ -34,7 +39,7 @@ class ElasticSearchEngine extends Engine
     /**
      * Remove the given model from the index.
      *
-     * @param \Illuminate\Database\Eloquent\Collection $models
+     * @param Collection $models
      * @return void
      */
     public function delete($models)
@@ -61,7 +66,7 @@ class ElasticSearchEngine extends Engine
     /**
      * Perform the given search on the engine.
      *
-     * @param  \Laravel\Scout\Builder  $builder
+     * @param Builder  $builder
      * @param  array  $options
      * @return mixed
      */
@@ -74,9 +79,9 @@ class ElasticSearchEngine extends Engine
                 'query' => [
                     'multi_match' => [
                         'query' => $builder->query ?? '',
-                        'fields' => $builder->model::SEARCHABLE_FIELDS,
+                        'fields' => $this->getSearchableFields($builder->model),
                         'type' => 'phrase_prefix',
-                    ]
+                    ],
                 ],
             ],
         ]);
@@ -84,6 +89,21 @@ class ElasticSearchEngine extends Engine
         $options = array_merge_recursive($params, $options);
 
         return $this->client->search($options);
+    }
+
+    /**
+     * Retrieves the searchable fields of a given model.
+     *
+     * @param Model $model The model instance.
+     * @return array The searchable fields.
+     */
+    protected function getSearchableFields(Model $model): array
+    {
+        if (! method_exists($model, 'searchableFields')) {
+            return [];
+        }
+
+        return $model->searchableFields();
     }
 
     /**
@@ -119,8 +139,8 @@ class ElasticSearchEngine extends Engine
      *
      * @param Builder $builder
      * @param mixed $results
-     * @param \Illuminate\Database\Eloquent\Model $model
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @param Model $model
+     * @return Collection
      */
     public function map(Builder $builder, $results, $model)
     {
@@ -143,10 +163,12 @@ class ElasticSearchEngine extends Engine
      *
      * @param Builder $builder
      * @param mixed $results
-     * @param \Illuminate\Database\Eloquent\Model $model
+     * @param Model $model
      * @return \Illuminate\Support\LazyCollection
      */
-    public function lazyMap(Builder $builder, $results, $model) {}
+    public function lazyMap(Builder $builder, $results, $model)
+    {
+    }
 
     /**
      * Get the total count from a raw result returned by the engine.
@@ -162,10 +184,19 @@ class ElasticSearchEngine extends Engine
     /**
      * Flush all of the model's records from the engine.
      *
-     * @param \Illuminate\Database\Eloquent\Model $model
+     * @param Model $model
      * @return void
      */
-    public function flush($model) {}
+    public function flush($model)
+    {
+        $this->client->indices()->delete([
+            'index' => $model->searchableas(),
+        ]);
+
+        Artisan::call('scout:elasticsearch:create', [
+            'model' => get_class($model),
+        ]);
+    }
 
     /**
      * Create a search index.
@@ -173,14 +204,18 @@ class ElasticSearchEngine extends Engine
      * @param string $name
      * @param array $options
      */
-    public function createIndex($name, array $options = []) {}
+    public function createIndex($name, array $options = [])
+    {
+    }
 
     /**
      * Delete a search index.
      *
      * @param string $name
      */
-    public function deleteIndex($name) {}
+    public function deleteIndex($name)
+    {
+    }
 
     /**
      * @param mixed $model The model to retrieve the searchable index for.
@@ -197,7 +232,7 @@ class ElasticSearchEngine extends Engine
     /**
      * Determine if the given model uses soft deletes.
      *
-     * @param  \Illuminate\Database\Eloquent\Model  $model
+     * @param Model  $model
      * @return bool
      */
     protected function usesSoftDelete($model)

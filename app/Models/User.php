@@ -11,7 +11,10 @@ use Laravel\Scout\Searchable;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, Searchable;
+    use HasApiTokens;
+    use HasFactory;
+    use Notifiable;
+    use Searchable;
 
     /**
      * The attributes that are mass assignable.
@@ -45,7 +48,19 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
-    public const SEARCHABLE_FIELDS = ['username', 'name', 'email'];
+    /**
+     * Returns an array of searchable fields.
+     *
+     * @return array The array of searchable fields.
+     */
+    public function searchableFields(): array
+    {
+        return [
+            'username',
+            'name',
+            'email',
+        ];
+    }
 
     public function toSearchableArray(): array
     {
