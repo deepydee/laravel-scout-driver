@@ -6,6 +6,7 @@ namespace Modules\Search\Engine;
 
 use Elastic\Elasticsearch\Client;
 use Laravel\Scout\Builder;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Scout\Engines\Engine;
 
 class ElasticSearchEngine extends Engine
@@ -92,7 +93,13 @@ class ElasticSearchEngine extends Engine
      * @param int $perPage
      * @param int $page
      */
-    public function paginate(Builder $builder, $perPage, $page) {}
+    public function paginate(Builder $builder, $perPage, $page)
+    {
+        return $this->performSearch($builder, [
+            'from' => ($page - 1) * $perPage,
+            'size' => $perPage,
+        ]);
+    }
 
     /**
      * Pluck and return the primary keys of the given results.
@@ -145,7 +152,10 @@ class ElasticSearchEngine extends Engine
      * @param mixed $results
      * @return int
      */
-    public function getTotalCount($results) {}
+    public function getTotalCount($results)
+    {
+        return $results->asObject()->hits->total->value ?? 0;
+    }
 
     /**
      * Flush all of the model's records from the engine.
@@ -180,5 +190,28 @@ class ElasticSearchEngine extends Engine
         return array_merge_recursive([
             'index' => $model->searchableAs(),
         ], $options);
+    }
+
+    /**
+     * Determine if the given model uses soft deletes.
+     *
+     * @param  \Illuminate\Database\Eloquent\Model  $model
+     * @return bool
+     */
+    protected function usesSoftDelete($model)
+    {
+        return in_array(SoftDeletes::class, class_uses_recursive($model));
+    }
+
+    /**
+     * Dynamically call the Elastic client instance.
+     *
+     * @param  string  $method
+     * @param  array  $parameters
+     * @return mixed
+     */
+    public function __call($method, $parameters)
+    {
+        return $this->client->$method(...$parameters);
     }
 }

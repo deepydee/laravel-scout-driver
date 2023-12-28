@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function (Request $request) {
-    $users = User::search($request->q)->get();
+    $users = User::search($request->q)->paginate(10);
 
     dd($users);
 });
