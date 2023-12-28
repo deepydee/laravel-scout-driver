@@ -109,7 +109,9 @@ class ElasticSearchEngine extends Engine
      */
     public function mapIds($results)
     {
-        // return collect($results['hits'])->pluck('objectID')->values();
+        return collect($results->asObject()->hits->hits)
+            ->pluck('_id')
+            ->values();
     }
 
     /**
