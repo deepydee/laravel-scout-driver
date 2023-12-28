@@ -16,9 +16,11 @@ class SearchServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $this->app->singleton('elasticsearch', function() {
+        $this->app->singletonIf('elasticsearch', function() {
             return ClientBuilder::create()
                 ->setHosts(config('scout.elasticsearch.hosts'))
+                ->setBasicAuthentication(config('scout.elasticsearch.user'), config('scout.elasticsearch.password'))
+                ->setCABundle(storage_path() . '/http_ca.crt')
                 ->build();
         });
 

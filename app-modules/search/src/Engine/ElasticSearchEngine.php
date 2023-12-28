@@ -22,7 +22,15 @@ class ElasticSearchEngine extends Engine
      */
     public function update($models)
     {
-        dd($this->client);
+        $models->each(function($model) {
+            $params = [
+                'index' => $model->searchableAs(),
+                'id' => $model->getKey(),
+                'body' => $model->toSearchableArray(),
+            ];
+
+            $this->client->index($params);
+        });
     }
 
     /**

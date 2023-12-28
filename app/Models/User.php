@@ -44,4 +44,13 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'username' => $this->username,
+            'name' => $this->name,
+            'email' => $this->email,
+        ];
+    }
 }
