@@ -139,4 +139,12 @@ return [
         ],
     ],
 
+    'elasticsearch' => [
+        'hosts' => [
+            env('ELASTICSEARCH_HOST', 'http://localhost:9200'),
+        ],
+        'user' => env('ELASTICSEARCH_USER'),
+        'password' => env('ELASTICSEARCH_PASSWORD'),
+    ],
+
 ];

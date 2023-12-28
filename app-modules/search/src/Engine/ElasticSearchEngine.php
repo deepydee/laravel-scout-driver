@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 namespace Modules\Search\Engine;
 
+use Elastic\Elasticsearch\Client;
 use Laravel\Scout\Builder;
 use Laravel\Scout\Engines\Engine;
 
 class ElasticSearchEngine extends Engine
 {
+    public function __construct(protected Client $client)
+    {
+    }
+
     /**
      * Update the given model in the index.
      *
@@ -17,7 +22,7 @@ class ElasticSearchEngine extends Engine
      */
     public function update($models)
     {
-        dd($models);
+        dd($this->client);
     }
 
     /**
