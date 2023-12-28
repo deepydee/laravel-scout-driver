@@ -1,0 +1,24 @@
+{
+	"name": "modules/search",
+	"description": "",
+	"type": "library",
+	"version": "1.0",
+	"license": "proprietary",
+	"require": {},
+	"autoload": {
+		"psr-4": {
+			"Modules\\Search\\": "src/",
+			"Modules\\Search\\Tests\\": "tests/",
+			"Modules\\Search\\Database\\Factories\\": "database/factories/",
+			"Modules\\Search\\Database\\Seeders\\": "database/seeders/"
+		}
+	},
+	"minimum-stability": "stable",
+	"extra": {
+		"laravel": {
+			"providers": [
+				"Modules\\Search\\Providers\\SearchServiceProvider"
+			]
+		}
+	}
+}
