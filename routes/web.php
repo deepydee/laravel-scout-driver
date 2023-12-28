@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -16,7 +17,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function (Request $request) {
-    $users = User::search($request->q)->keys();
+    $users = User::search($request->q)->query(fn (Builder $query) => $query->lazy()->all())->get();
 
     dd($users);
 });

@@ -15,6 +15,7 @@ class ElasticSearchIndex extends Command
 
         $this->client = app('elasticsearch');
     }
+
     /**
      * The name and signature of the console command.
      *
@@ -34,7 +35,7 @@ class ElasticSearchIndex extends Command
      */
     public function handle()
     {
-        if (!class_exists($model = $this->argument('model'))) {
+        if (! class_exists($model = $this->argument('model'))) {
             return $this->error("{$model} could not be resolved.");
         }
 
@@ -77,8 +78,6 @@ class ElasticSearchIndex extends Command
 
     /**
      * Returns an array of analyzers.
-     *
-     * @return array
      */
     private function analyzers(): array
     {

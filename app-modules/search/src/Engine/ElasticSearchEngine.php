@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\LazyCollection;
 use Laravel\Scout\Builder;
 use Laravel\Scout\Engines\Engine;
 
@@ -21,7 +22,7 @@ class ElasticSearchEngine extends Engine
     /**
      * Update the given model in the index.
      *
-     * @param Collection $models
+     * @param  Collection  $models
      * @return void
      */
     public function update($models)
@@ -39,11 +40,15 @@ class ElasticSearchEngine extends Engine
     /**
      * Remove the given model from the index.
      *
-     * @param Collection $models
+     * @param  Collection  $models
      * @return void
      */
     public function delete($models)
     {
+        if ($models->isEmpty()) {
+            return;
+        }
+
         $models->each(function ($model) {
             $params = $this->getRequestBody($model, [
                 'id' => $model->getKey(),
@@ -55,8 +60,6 @@ class ElasticSearchEngine extends Engine
 
     /**
      * Perform the given search on the engine.
-     *
-     * @param Builder $builder
      */
     public function search(Builder $builder)
     {
@@ -66,8 +69,6 @@ class ElasticSearchEngine extends Engine
     /**
      * Perform the given search on the engine.
      *
-     * @param Builder  $builder
-     * @param  array  $options
      * @return mixed
      */
     protected function performSearch(Builder $builder, array $options = [])
@@ -94,7 +95,7 @@ class ElasticSearchEngine extends Engine
     /**
      * Retrieves the searchable fields of a given model.
      *
-     * @param Model $model The model instance.
+     * @param  Model  $model The model instance.
      * @return array The searchable fields.
      */
     protected function getSearchableFields(Model $model): array
@@ -109,9 +110,8 @@ class ElasticSearchEngine extends Engine
     /**
      * Perform the given search on the engine.
      *
-     * @param Builder $builder
-     * @param int $perPage
-     * @param int $page
+     * @param  int  $perPage
+     * @param  int  $page
      */
     public function paginate(Builder $builder, $perPage, $page)
     {
@@ -124,7 +124,7 @@ class ElasticSearchEngine extends Engine
     /**
      * Pluck and return the primary keys of the given results.
      *
-     * @param mixed $results
+     * @param  mixed  $results
      * @return \Illuminate\Support\Collection
      */
     public function mapIds($results)
@@ -137,9 +137,8 @@ class ElasticSearchEngine extends Engine
     /**
      * Map the given results to instances of the given model.
      *
-     * @param Builder $builder
-     * @param mixed $results
-     * @param Model $model
+     * @param  mixed  $results
+     * @param  Model  $model
      * @return Collection
      */
     public function map(Builder $builder, $results, $model)
@@ -161,19 +160,25 @@ class ElasticSearchEngine extends Engine
     /**
      * Map the given results to instances of the given model via a lazy collection.
      *
-     * @param Builder $builder
-     * @param mixed $results
-     * @param Model $model
+     * @param  mixed  $results
+     * @param  Model  $model
      * @return \Illuminate\Support\LazyCollection
      */
     public function lazyMap(Builder $builder, $results, $model)
     {
+        $hits = $results->asObject()->hits->hits;
+
+        if (empty($hits)) {
+            return LazyCollection::make($model->newCollection());
+        }
+
+        return LazyCollection::make($hits->all());
     }
 
     /**
      * Get the total count from a raw result returned by the engine.
      *
-     * @param mixed $results
+     * @param  mixed  $results
      * @return int
      */
     public function getTotalCount($results)
@@ -184,7 +189,7 @@ class ElasticSearchEngine extends Engine
     /**
      * Flush all of the model's records from the engine.
      *
-     * @param Model $model
+     * @param  Model  $model
      * @return void
      */
     public function flush($model)
@@ -201,25 +206,30 @@ class ElasticSearchEngine extends Engine
     /**
      * Create a search index.
      *
-     * @param string $name
-     * @param array $options
+     * @param  string  $name
      */
     public function createIndex($name, array $options = [])
     {
+        $options = array_merge_recursive([
+            'index' => $name,
+        ], $options);
+
+        $this->client->indices()->create($options);
     }
 
     /**
      * Delete a search index.
      *
-     * @param string $name
+     * @param  string  $name
      */
     public function deleteIndex($name)
     {
+        $this->client->indices()->delete(['index' => $name]);
     }
 
     /**
-     * @param mixed $model The model to retrieve the searchable index for.
-     * @param array $options Additional options to include in the request body.
+     * @param  mixed  $model The model to retrieve the searchable index for.
+     * @param  array  $options Additional options to include in the request body.
      * @return array The generated request body.
      */
     protected function getRequestBody($model, array $options = []): array
@@ -232,7 +242,7 @@ class ElasticSearchEngine extends Engine
     /**
      * Determine if the given model uses soft deletes.
      *
-     * @param Model  $model
+     * @param  Model  $model
      * @return bool
      */
     protected function usesSoftDelete($model)
