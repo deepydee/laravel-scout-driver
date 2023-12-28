@@ -45,6 +45,8 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
+    public const SEARCHABLE_FIELDS = ['username', 'name', 'email'];
+
     public function toSearchableArray(): array
     {
         return [

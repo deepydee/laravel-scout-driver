@@ -46,7 +46,23 @@ class ElasticSearchEngine extends Engine
      *
      * @param Builder $builder
      */
-    public function search(Builder $builder) {}
+    public function search(Builder $builder)
+    {
+        $params = [
+            'index' => $builder->model->searchableAs(),
+            'body' => [
+                'query' => [
+                    'multi_match' => [
+                        'query' => $builder->query,
+                        'fields' => $builder->model::SEARCHABLE_FIELDS,
+                        'type' => 'phrase_prefix',
+                    ]
+                ],
+            ],
+        ];
+
+        return $this->client->search($params);
+    }
 
     /**
      * Perform the given search on the engine.
@@ -73,7 +89,21 @@ class ElasticSearchEngine extends Engine
      * @param \Illuminate\Database\Eloquent\Model $model
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function map(Builder $builder, $results, $model) {}
+    public function map(Builder $builder, $results, $model)
+    {
+        $hits = $results->asObject()->hits->hits;
+
+        if (empty($hits)) {
+            return $model->newCollection();
+        }
+
+        $ids = collect($hits)
+            ->pluck('_id')
+            ->values()
+            ->all();
+
+        return $model->getScoutModelsByIds($builder, $ids);
+    }
 
     /**
      * Map the given results to instances of the given model via a lazy collection.
